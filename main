@@ -1,0 +1,82 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+struct Job {
+    char name[20];
+    int estimated_time;
+    int waiting_time;
+    float priority;
+};
+
+void updatePriorities(struct Job *jobs, int num_jobs) {
+    for (int i = 0; i < num_jobs; i++) {
+        jobs[i].priority = 1.0 + (float)jobs[i].waiting_time / (float)jobs[i].estimated_time;
+    }
+}
+
+int main() {
+    int num_processes;
+
+    printf("Enter the number of processes: ");
+    scanf("%d", &num_processes);
+
+    struct Job *jobs = (struct Job *)malloc(num_processes * sizeof(struct Job));
+
+    for (int i = 0; i < num_processes; i++) {
+        printf("Enter the name of process %d: ", i + 1);
+        scanf("%s", jobs[i].name);
+        printf("Enter the estimated run time for %s: ", jobs[i].name);
+        scanf("%d", &jobs[i].estimated_time);
+        jobs[i].waiting_time = 0;
+        jobs[i].priority = 1.0;
+    }
+
+    int current_time = 0;
+    char gantt_chart[100];
+    gantt_chart[0] = '\0';
+
+    while (1) {
+        updatePriorities(jobs, num_processes);
+        int selected_job = -1;
+        float highest_priority = -1.0;
+
+        for (int i = 0; i < num_processes; i++) {
+            if (jobs[i].estimated_time > 0 && jobs[i].priority > highest_priority) {
+                selected_job = i;
+                highest_priority = jobs[i].priority;
+            }
+        }
+
+        if (selected_job == -1) {
+            break; // All jobs completed
+        }
+
+        jobs[selected_job].estimated_time--;
+        for (int i = 0; i < num_processes; i++) {
+            if (i != selected_job) {
+                jobs[i].waiting_time++;
+            }
+        }
+
+        strcat(gantt_chart, jobs[selected_job].name);
+        strcat(gantt_chart, " | ");
+        current_time++;
+    }
+
+    float total_waiting_time = 0;
+    for (int i = 0; i < num_processes; i++) {
+        total_waiting_time += jobs[i].waiting_time;
+    }
+    float average_waiting_time = total_waiting_time / num_processes;
+
+    printf("\nGantt Chart: %s\n", gantt_chart);
+     printf("\nIndividual Waiting Times:\n");
+    for (int i = 0; i < num_processes; i++) {
+        printf("%s: %d units\n", jobs[i].name, jobs[i].waiting_time);
+        printf("Average Waiting Time: %.2f units\n", average_waiting_time);
+    }
+
+    free(jobs);
+    return 0;
+}
